@@ -1,13 +1,13 @@
+use image::{ImageBuffer, Rgba};
 use rand::Rng;
-use raster::{Color, Image};
 
 pub trait Drawable {
-    fn draw(&self, image: &mut Image);
-    fn color(&self) -> Color;
+    fn draw(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>);
+    fn color(&self) -> Rgba<u8>;
 }
 
 pub trait Displayable {
-    fn display(&mut self, x: i32, y: i32, color: Color);
+    fn display(&mut self, x: i32, y: i32, color: Rgba<u8>);
 }
 
 #[derive(Clone, Copy)]
@@ -31,12 +31,12 @@ impl Point {
 }
 
 impl Drawable for Point {
-    fn draw(&self, image: &mut Image) {
-        image.display(self.x, self.y, self.color());
+    fn draw(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
+        image.put_pixel(self.x as u32, self.y as u32, self.color());
     }
 
-    fn color(&self) -> Color {
-        Color::rgb(255, 0, 0)
+    fn color(&self) -> Rgba<u8> {
+        Rgba([255, 0, 0, 255])
     }
 }
 
@@ -64,18 +64,20 @@ impl Line {
 }
 
 impl Drawable for Line {
-    fn draw(&self, image: &mut Image) {
-        image.draw_line(
-            self.start.x,
-            self.start.y,
-            self.end.x,
-            self.end.y,
-            self.color(),
-        );
+    fn draw(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
+        let dx = (self.end.x - self.start.x) as f32;
+        let dy = (self.end.y - self.start.y) as f32;
+        let steps = dx.abs().max(dy.abs()) as u32;
+
+        for i in 0..=steps {
+            let x = (self.start.x as f32 + (dx * (i as f32 / steps as f32))).round() as u32;
+            let y = (self.start.y as f32 + (dy * (i as f32 / steps as f32))).round() as u32;
+            image.put_pixel(x, y, self.color());
+        }
     }
 
-    fn color(&self) -> Color {
-        Color::rgb(0, 255, 0)
+    fn color(&self) -> Rgba<u8> {
+        Rgba([0, 255, 0, 255])
     }
 }
 
@@ -92,19 +94,20 @@ impl Triangle {
 }
 
 impl Drawable for Triangle {
-    fn draw(&self, image: &mut Image) {
-        image.draw_polygon(
-            &[
-                (self.vertices[0].x, self.vertices[0].y),
-                (self.vertices[1].x, self.vertices[1].y),
-                (self.vertices[2].x, self.vertices[2].y),
-            ],
-            self.color(),
-        );
+    fn draw(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
+        let mut edges = vec![
+            Line::new(&self.vertices[0], &self.vertices[1]),
+            Line::new(&self.vertices[1], &self.vertices[2]),
+            Line::new(&self.vertices[2], &self.vertices[0]),
+        ];
+
+        for edge in edges {
+            edge.draw(image);
+        }
     }
 
-    fn color(&self) -> Color {
-        Color::rgb(0, 0, 255)
+    fn color(&self) -> Rgba<u8> {
+        Rgba([0, 0, 255, 255])
     }
 }
 
@@ -123,18 +126,19 @@ impl Rectangle {
 }
 
 impl Drawable for Rectangle {
-    fn draw(&self, image: &mut Image) {
-        image.draw_rectangle(
-            self.top_left.x,
-            self.top_left.y,
-            self.bottom_right.x,
-            self.bottom_right.y,
-            self.color(),
-        );
+    fn draw(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
+        let top_left = (self.top_left.x as u32, self.top_left.y as u32);
+        let bottom_right = (self.bottom_right.x as u32, self.bottom_right.y as u32);
+
+        for x in top_left.0..bottom_right.0 {
+            for y in top_left.1..bottom_right.1 {
+                image.put_pixel(x, y, self.color());
+            }
+        }
     }
 
-    fn color(&self) -> Color {
-        Color::rgb(255, 255, 0)
+    fn color(&self) -> Rgba<u8> {
+        Rgba([255, 255, 0, 255])
     }
 }
 
@@ -161,22 +165,29 @@ impl Circle {
 }
 
 impl Drawable for Circle {
-    fn draw(&self, image: &mut Image) {
-        image.draw_ellipse(
-            self.center.x,
-            self.center.y,
-            self.radius,
-            self.radius,
-            self.color(),
-        );
+    fn draw(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
+        let center_x = self.center.x as f32;
+        let center_y = self.center.y as f32;
+        let radius = self.radius as f32;
+
+        for angle in 0..=360 {
+            let radian = angle as f32 * std::f32::consts::PI / 180.0;
+            let x = (center_x + radius * radian.cos()) as u32;
+            let y = (center_y + radius * radian.sin()) as u32;
+
+            if x < image.width() && y < image.height() {
+                image.put_pixel(x, y, self.color());
+            }
+        }
     }
 
-    fn color(&self) -> Color {
+    fn color(&self) -> Rgba<u8> {
         let mut rng = rand::thread_rng();
-        Color::rgb(
-            rng.gen_range(0..256),
-            rng.gen_range(0..256),
-            rng.gen_range(0..256),
-        )
+        Rgba([
+            rng.gen_range(0..255),
+            rng.gen_range(0..255),
+            rng.gen_range(0..255),
+            255,
+        ])
     }
 }
