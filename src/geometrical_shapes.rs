@@ -68,16 +68,22 @@ impl Drawable for Line {
         let dx = (self.end.x - self.start.x) as f32;
         let dy = (self.end.y - self.start.y) as f32;
         let steps = dx.abs().max(dy.abs()) as u32;
-
+        let rgb = self.color();
         for i in 0..=steps {
             let x = (self.start.x as f32 + (dx * (i as f32 / steps as f32))).round() as u32;
             let y = (self.start.y as f32 + (dy * (i as f32 / steps as f32))).round() as u32;
-            image.set_pixel(x as i32, y as i32, self.color());
+            image.set_pixel(x as i32, y as i32, rgb.clone());
         }
     }
 
     fn color(&self) -> Color {
-        Color::rgb(0, 255, 0)
+        // Color::rgb(0, 255, 0)
+        let mut rng = rand::thread_rng();
+        Color::rgb(
+            rng.gen_range(0..255),
+            rng.gen_range(0..255),
+            rng.gen_range(0..255),
+        )
     }
 }
 
@@ -100,14 +106,28 @@ impl Drawable for Triangle {
             Line::new(&self.vertices[1], &self.vertices[2]),
             Line::new(&self.vertices[2], &self.vertices[0]),
         ];
-
+        let rgb = self.color();
         for edge in edges {
             edge.draw(image);
+            let dx = (edge.end.x - edge.start.x) as f32;
+            let dy = (edge.end.y - edge.start.y) as f32;
+            let steps = dx.abs().max(dy.abs()) as u32;
+            for i in 0..=steps {
+                let x = (edge.start.x as f32 + (dx * (i as f32 / steps as f32))).round() as u32;
+                let y = (edge.start.y as f32 + (dy * (i as f32 / steps as f32))).round() as u32;
+                image.set_pixel(x as i32, y as i32, rgb.clone());
+            }
         }
     }
 
     fn color(&self) -> Color {
-        Color::rgb(0, 0, 255)
+        // Color::rgb(0, 0, 255)
+        let mut rng = rand::thread_rng();
+        Color::rgb(
+            rng.gen_range(0..255),
+            rng.gen_range(0..255),
+            rng.gen_range(0..255),
+        )
     }
 }
 
@@ -129,10 +149,10 @@ impl Drawable for Rectangle {
     fn draw(&self, image: &mut Image) {
         let top_left = (self.top_left.x as u32, self.top_left.y as u32);
         let bottom_right = (self.bottom_right.x as u32, self.bottom_right.y as u32);
-
+        let rgb = self.color();
         for x in top_left.0..bottom_right.0 {
             for y in top_left.1..bottom_right.1 {
-                image.set_pixel(x as i32, y as i32, self.color());
+                image.set_pixel(x as i32, y as i32, rgb.clone());
             }
         }
     }
@@ -169,14 +189,14 @@ impl Drawable for Circle {
         let center_x = self.center.x as f32;
         let center_y = self.center.y as f32;
         let radius = self.radius as f32;
-
+        let rgb = self.color();
         for angle in 0..=360 {
             let radian = angle as f32 * std::f32::consts::PI / 180.0;
             let x = (center_x + radius * radian.cos()) as u32;
             let y = (center_y + radius * radian.sin()) as u32;
 
             if x < image.width.try_into().unwrap() && y < image.height.try_into().unwrap() {
-                image.set_pixel(x as i32, y as i32, self.color());
+                image.set_pixel(x as i32, y as i32, rgb.clone());
             }
         }
     }
