@@ -11,7 +11,7 @@ fn main() {
 
     gs::Point::random(image.width as u32, image.height as u32).draw(&mut image);
 
-    let rectangle = gs::Rectangle::new(&gs::Point::new(150, 150), &gs::Point::new(50, 50));
+    let rectangle = gs::Rectangle::new(&gs::Point::new(100, 200), &gs::Point::new(200, 500));
     rectangle.draw(&mut image);
 
     let triangle = gs::Triangle::new (

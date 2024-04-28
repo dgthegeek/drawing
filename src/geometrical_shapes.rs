@@ -6,6 +6,7 @@ pub trait Drawable {
     fn color(&self) -> Color;
 }
 
+#[allow(dead_code)]
 pub trait Displayable {
     fn display(&mut self, x: i32, y: i32, color: Color);
 }
@@ -30,9 +31,10 @@ impl Point {
     }
 }
 
+
 impl Drawable for Point {
     fn draw(&self, image: &mut Image) {
-        image.set_pixel(self.x as i32, self.y as i32, self.color());
+       let _ = image.set_pixel(self.x as i32, self.y as i32, self.color());
     }
 
     fn color(&self) -> Color {
@@ -72,7 +74,7 @@ impl Drawable for Line {
         for i in 0..=steps {
             let x = (self.start.x as f32 + (dx * (i as f32 / steps as f32))).round() as u32;
             let y = (self.start.y as f32 + (dy * (i as f32 / steps as f32))).round() as u32;
-            image.set_pixel(x as i32, y as i32, self.color());
+            let _ = image.set_pixel(x as i32, y as i32, self.color());
         }
     }
 
@@ -95,7 +97,7 @@ impl Triangle {
 
 impl Drawable for Triangle {
     fn draw(&self, image: &mut Image) {
-        let mut edges = vec![
+        let edges = vec![
             Line::new(&self.vertices[0], &self.vertices[1]),
             Line::new(&self.vertices[1], &self.vertices[2]),
             Line::new(&self.vertices[2], &self.vertices[0]),
@@ -127,13 +129,14 @@ impl Rectangle {
 
 impl Drawable for Rectangle {
     fn draw(&self, image: &mut Image) {
-        let top_left = (self.top_left.x as u32, self.top_left.y as u32);
-        let bottom_right = (self.bottom_right.x as u32, self.bottom_right.y as u32);
+        for x in self.top_left.x..=self.bottom_right.x {
+            let _ = image.set_pixel(x, self.top_left.y, self.color());
+            let _ = image.set_pixel(x, self.bottom_right.y, self.color());
+        }
 
-        for x in top_left.0..bottom_right.0 {
-            for y in top_left.1..bottom_right.1 {
-                image.set_pixel(x as i32, y as i32, self.color());
-            }
+        for y in self.top_left.y..self.bottom_right.y {
+            let _ = image.set_pixel(self.top_left.x, y, self.color());
+            let _ = image.set_pixel(self.bottom_right.x, y, self.color());
         }
     }
 
@@ -170,18 +173,22 @@ impl Drawable for Circle {
         let center_y = self.center.y as f32;
         let radius = self.radius as f32;
 
+        // Génération de la couleur aléatoire une seule fois
+        let color = self.color();
+
         for angle in 0..=360 {
             let radian = angle as f32 * std::f32::consts::PI / 180.0;
             let x = (center_x + radius * radian.cos()) as u32;
             let y = (center_y + radius * radian.sin()) as u32;
 
             if x < image.width.try_into().unwrap() && y < image.height.try_into().unwrap() {
-                image.set_pixel(x as i32, y as i32, self.color());
+                let _ = image.set_pixel(x as i32, y as i32, color.clone()); // Utilisation de la même couleur pour tous les pixels
             }
         }
     }
 
     fn color(&self) -> Color {
+        // Génération de la couleur aléatoire une seule fois et la retourner à chaque appel
         let mut rng = rand::thread_rng();
         Color::rgb(
             rng.gen_range(0..255),
