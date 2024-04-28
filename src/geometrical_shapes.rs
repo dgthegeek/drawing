@@ -1,13 +1,13 @@
-use image::{ImageBuffer, Rgba};
 use rand::Rng;
+use raster::{Color, Image};
 
 pub trait Drawable {
-    fn draw(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>);
-    fn color(&self) -> Rgba<u8>;
+    fn draw(&self, image: &mut Image);
+    fn color(&self) -> Color;
 }
 
 pub trait Displayable {
-    fn display(&mut self, x: i32, y: i32, color: Rgba<u8>);
+    fn display(&mut self, x: i32, y: i32, color: Color);
 }
 
 #[derive(Clone, Copy)]
@@ -31,12 +31,12 @@ impl Point {
 }
 
 impl Drawable for Point {
-    fn draw(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
-        image.put_pixel(self.x as u32, self.y as u32, self.color());
+    fn draw(&self, image: &mut Image) {
+        image.set_pixel(self.x as i32, self.y as i32, self.color());
     }
 
-    fn color(&self) -> Rgba<u8> {
-        Rgba([255, 0, 0, 255])
+    fn color(&self) -> Color {
+        Color::rgb(255, 0, 0)
     }
 }
 
@@ -64,7 +64,7 @@ impl Line {
 }
 
 impl Drawable for Line {
-    fn draw(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
+    fn draw(&self, image: &mut Image) {
         let dx = (self.end.x - self.start.x) as f32;
         let dy = (self.end.y - self.start.y) as f32;
         let steps = dx.abs().max(dy.abs()) as u32;
@@ -72,12 +72,12 @@ impl Drawable for Line {
         for i in 0..=steps {
             let x = (self.start.x as f32 + (dx * (i as f32 / steps as f32))).round() as u32;
             let y = (self.start.y as f32 + (dy * (i as f32 / steps as f32))).round() as u32;
-            image.put_pixel(x, y, self.color());
+            image.set_pixel(x as i32, y as i32, self.color());
         }
     }
 
-    fn color(&self) -> Rgba<u8> {
-        Rgba([0, 255, 0, 255])
+    fn color(&self) -> Color {
+        Color::rgb(0, 255, 0)
     }
 }
 
@@ -94,7 +94,7 @@ impl Triangle {
 }
 
 impl Drawable for Triangle {
-    fn draw(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
+    fn draw(&self, image: &mut Image) {
         let mut edges = vec![
             Line::new(&self.vertices[0], &self.vertices[1]),
             Line::new(&self.vertices[1], &self.vertices[2]),
@@ -106,8 +106,8 @@ impl Drawable for Triangle {
         }
     }
 
-    fn color(&self) -> Rgba<u8> {
-        Rgba([0, 0, 255, 255])
+    fn color(&self) -> Color {
+        Color::rgb(0, 0, 255)
     }
 }
 
@@ -126,19 +126,19 @@ impl Rectangle {
 }
 
 impl Drawable for Rectangle {
-    fn draw(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
+    fn draw(&self, image: &mut Image) {
         let top_left = (self.top_left.x as u32, self.top_left.y as u32);
         let bottom_right = (self.bottom_right.x as u32, self.bottom_right.y as u32);
 
         for x in top_left.0..bottom_right.0 {
             for y in top_left.1..bottom_right.1 {
-                image.put_pixel(x, y, self.color());
+                image.set_pixel(x as i32, y as i32, self.color());
             }
         }
     }
 
-    fn color(&self) -> Rgba<u8> {
-        Rgba([255, 255, 0, 255])
+    fn color(&self) -> Color {
+        Color::rgb(255, 255, 0)
     }
 }
 
@@ -165,7 +165,7 @@ impl Circle {
 }
 
 impl Drawable for Circle {
-    fn draw(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
+    fn draw(&self, image: &mut Image) {
         let center_x = self.center.x as f32;
         let center_y = self.center.y as f32;
         let radius = self.radius as f32;
@@ -175,19 +175,18 @@ impl Drawable for Circle {
             let x = (center_x + radius * radian.cos()) as u32;
             let y = (center_y + radius * radian.sin()) as u32;
 
-            if x < image.width() && y < image.height() {
-                image.put_pixel(x, y, self.color());
+            if x < image.width.try_into().unwrap() && y < image.height.try_into().unwrap() {
+                image.set_pixel(x as i32, y as i32, self.color());
             }
         }
     }
 
-    fn color(&self) -> Rgba<u8> {
+    fn color(&self) -> Color {
         let mut rng = rand::thread_rng();
-        Rgba([
+        Color::rgb(
             rng.gen_range(0..255),
             rng.gen_range(0..255),
             rng.gen_range(0..255),
-            255,
-        ])
+        )
     }
 }
